@@ -10,10 +10,6 @@ This project simulates a **line-following patrol robot** using **ROS2, Gazebo, R
 ## 📂 Project Structure
 📦 virtual-line-following-robot ├── src/ # Source code for robot control & vision processing ├── launch/ # Launch files for ROS2 ├── models/ # Robot models and world files for Gazebo ├── config/ # Configuration files (camera settings, PID tuning, etc.) ├── scripts/ # Python scripts for image processing and control ├── README.md # Project documentation
 
-markdown
-Copy
-Edit
-
 ## 🚀 Installation & Setup
 ### 1️⃣ Prerequisites
 Ensure you have the following installed:
@@ -23,36 +19,24 @@ Ensure you have the following installed:
   ```bash
   sudo apt install python3-opencv
 ROS2 Dependencies:
-bash
-Copy
-Edit
+
 sudo apt install ros-foxy-vision-msgs
 2️⃣ Clone the Repository
-bash
-Copy
-Edit
 git clone https://github.com/yourusername/virtual-line-following-robot.git
 cd virtual-line-following-robot
 3️⃣ Build and Source the Package
-bash
-Copy
-Edit
+
 colcon build
 source install/setup.bash
-4️⃣ Launch the Simulation
-To start the Gazebo environment with the robot:
 
-bash
-Copy
-Edit
-ros2 launch virtual_line_following patrol_robot.launch.py
+4️⃣ Launch the Simulation
+ros2 launch originbot_gazebo originbot_follow_line_gazebo.launch.py
+ros2 run rviz2 rviz2
+ros2 run originbot_demo line_follower
+
 🎯 How It Works
 Camera Captures Image – The robot’s camera captures frames and detects the line.
 Image Processing (cv2) – OpenCV processes the frame, detecting the line’s position.
 Control Algorithm – The robot adjusts its steering and speed to follow the line.
 ROS2 Nodes – The control signals are sent to the robot using ROS2 topics
 
-commands:
-ros2 launch originbot_gazebo originbot_follow_line_gazebo.launch.py
-ros2 run rviz2 rviz2
-ros2 run originbot_demo line_follower
