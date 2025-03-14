@@ -14,49 +14,46 @@ class LineFollower(Node):
         self.subscription = self.create_subscription(
             Image, 'camera/image_raw', self.image_callback, 10)
         self.bridge = cv_bridge.CvBridge()
-        
-        self.searching = False  # Indicates if the robot is in search mode
-        self.search_direction = 1  # 1 = left, -1 = right
 
     def image_callback(self, msg):
-        print("Received image frame")  # Debugging: Check if callback is triggering
+        print("Received image frame")  # Debugging
         image_input = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         hsv = cv2.cvtColor(image_input, cv2.COLOR_BGR2HSV)
         
-        # Define the yellow color range
+        # Define the yellow color range (Adjust based on your environment)
         lower_yellow = np.array([20, 100, 100])
-        upper_yellow = np.array([30, 255, 255])
+        upper_yellow = np.array([40, 255, 255])  # Adjusted range
         mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
         
-        h, w, d = image_input.shape
+        h, w, _ = image_input.shape
         search_top = int(3 * h / 4)
         search_bot = int(3 * h / 4 + 20)
-        mask[0:search_top, 0:w] = 0
-        mask[search_bot:h, 0:w] = 0
+        mask[:search_top, :] = 0  # Mask out upper part
+        mask[search_bot:, :] = 0  # Mask out lower part
 
         M = cv2.moments(mask)
         twist = Twist()
 
-        if M['m00'] != 0:  # Line detected
+        if M['m00'] > 0:  # If a yellow line is detected
             cx = int(M['m10'] / M['m00'])
             cy = int(M['m01'] / M['m00'])
             cv2.circle(image_input, (cx, cy), 20, (0, 0, 255), -1)
-            err = cx - w / 2
-            twist.linear.x = 0.7  # Move forward
-            twist.angular.z = -float(err) / 500  # Adjust direction
-            self.searching = False  # Reset search mode
-            print(f"Following line. Linear: {twist.linear.x}, Angular: {twist.angular.z}")
 
-            if cx == 0:
-                twist.linear.x = 0.0  # Stop moving forward
-                twist.angular.z = 0.0
-                
-        else:  # No line detected -> Start searching
-            twist.linear.x = 0.0  # Stop moving forward
+            err = cx - w / 2
+            twist.linear.x = 0.3  # Move forward
+            twist.angular.z = -float(err) / 500  # Adjust direction
+            print(f"Following line. Linear: {twist.linear.x}, Angular: {twist.angular.z}") 
+
+        else:  # No line detected -> Stop the robot
+            print("No line detected. Stopping the robot.")
+            twist.linear.x = 0.0
             twist.angular.z = 0.0
 
+        # Publish movement command
         self.publisher.publish(twist)
-        cv2.imshow("detect_line", image_input)
+        s = str(M['m00'])
+        # Debugging
+        cv2.imshow("Check cache", image_input)
         cv2.waitKey(3)
 
     def stop_robot(self):
@@ -65,8 +62,9 @@ class LineFollower(Node):
         stop_twist = Twist()
         stop_twist.linear.x = 0.0
         stop_twist.angular.z = 0.0
-        for _ in range(5):  # Publish multiple times to ensure stop command is received
+        for _ in range(5):  
             self.publisher.publish(stop_twist)
+            time.sleep(0.1)
 
 def main():
     rclpy.init()
@@ -77,6 +75,7 @@ def main():
         print("Keyboard Interrupt detected. Stopping robot.")
     finally:
         node.stop_robot()
+        time.sleep(1)
         node.destroy_node()
         rclpy.shutdown()
 
